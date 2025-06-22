@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # Load the Excel file
-df = pd.read_excel("RISE_Vol_72_All_Workouts_Cleaned.xlsx", engine="openpyxl")
+df = pd.read_excel("vol72.xlsx", engine="openpyxl")
 
 # Clean up
 df = df[df['Day'].notna()]
