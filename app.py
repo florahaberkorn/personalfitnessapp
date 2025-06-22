@@ -4,23 +4,28 @@ import pandas as pd
 # Load the Excel file
 df = pd.read_excel("vol72.xlsx", engine="openpyxl")
 
-# Clean up
-df = df[df['Day'].notna()]
+# ─────────────────────────────────────────────
+# ✅ Clean Day column safely
+# ─────────────────────────────────────────────
+df['Day'] = pd.to_numeric(df['Day'], errors='coerce')
+df = df.dropna(subset=['Day'])
 df['Day'] = df['Day'].astype(int)
 
-# Split warm-up and cool-down into a separate DataFrame
-warmup_cooldown_blocks = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8']
-df_main = df[~df['Block'].isin(warmup_cooldown_blocks)]
-df_warmcool = df[df['Block'].isin(warmup_cooldown_blocks)]
+# Separate warm-up/cool-down and main workout
+warmcool_blocks = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8']
+df_main = df[~df['Block'].isin(warmcool_blocks)]
+df_warmcool = df[df['Block'].isin(warmcool_blocks)]
 
-# Sidebar navigation
+# ─────────────────────────────────────────────
+# 🔀 Sidebar navigation
+# ─────────────────────────────────────────────
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Workouts", "Warm-Up & Cool Down"])
+page = st.sidebar.radio("Go to", ["🏋️ Workouts", "🧘 Warm-Up & Cool Down"])
 
 # ─────────────────────────────────────────────
-# PAGE 1: WORKOUT TRACKER
+# PAGE 1: WORKOUTS
 # ─────────────────────────────────────────────
-if page == "Workouts":
+if page == "🏋️ Workouts":
     st.title("🏋️ RISE Vol.72 Workout Tracker")
 
     selected_day = st.sidebar.selectbox("Select Day", sorted(df_main['Day'].unique()))
@@ -29,7 +34,7 @@ if page == "Workouts":
         sorted(df_main[df_main["Day"] == selected_day]["Block"].unique())
     )
 
-    filtered = df_main[(df_main["Day"] == selected_day)]
+    filtered = df_main[df_main["Day"] == selected_day]
     if selected_blocks:
         filtered = filtered[filtered["Block"].isin(selected_blocks)]
 
@@ -47,7 +52,7 @@ if page == "Workouts":
 # ─────────────────────────────────────────────
 # PAGE 2: WARM-UP & COOL DOWN
 # ─────────────────────────────────────────────
-elif page == "Warm-Up & Cool Down":
+elif page == "🧘 Warm-Up & Cool Down":
     st.title("🧘 Warm-Up & Cool Down")
 
     selected_day = st.selectbox("Select Day", sorted(df_warmcool['Day'].unique()))
