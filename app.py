@@ -3,73 +3,44 @@ import pandas as pd
 
 # Load the Excel file
 df = pd.read_excel("vol72.xlsx", engine="openpyxl")
-
-# ─────────────────────────────────────────────
-# ✅ Clean Day column safely
-# ─────────────────────────────────────────────
+# Clean Day column
 df['Day'] = pd.to_numeric(df['Day'], errors='coerce')
 df = df.dropna(subset=['Day'])
 df['Day'] = df['Day'].astype(int)
 
-# Separate warm-up/cool-down and main workout
+# Separate warmup/cooldown if needed later
 warmcool_blocks = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8']
-df_main = df[~df['Block'].isin(warmcool_blocks)]
-df_warmcool = df[df['Block'].isin(warmcool_blocks)]
+df_main = df[~df["Block"].isin(warmcool_blocks)]
 
-# ─────────────────────────────────────────────
-# 🔀 Sidebar navigation
-# ─────────────────────────────────────────────
+# Sidebar navigation
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["🏋️ Workouts", "🧘 Warm-Up & Cool Down"])
+page = st.sidebar.radio("Go to", ["🏋️ Workouts"])
 
 # ─────────────────────────────────────────────
-# PAGE 1: WORKOUTS
+# PAGE: Workouts
 # ─────────────────────────────────────────────
 if page == "🏋️ Workouts":
     st.title("🏋️ RISE Vol.72 Workout Tracker")
 
     selected_day = st.sidebar.selectbox("Select Day", sorted(df_main['Day'].unique()))
-    selected_blocks = st.sidebar.multiselect(
-        "Select Block(s)", 
-        sorted(df_main[df_main["Day"] == selected_day]["Block"].unique())
-    )
+    day_df = df_main[df_main["Day"] == selected_day]
 
-    filtered = df_main[df_main["Day"] == selected_day]
-    if selected_blocks:
-        filtered = filtered[filtered["Block"].isin(selected_blocks)]
+    # Get all unique groups for this day (e.g., A, B1, C2)
+    groups = day_df["Group"].unique()
 
-    for _, row in filtered.iterrows():
-        with st.expander(f"{row['Block']}: {row['Primary Exercise']}"):
-            st.write(f"**Sets x Reps:** {row['Sets x Reps']}")
-            st.write(f"**RPE:** {row['RPE']}")
-            st.write(f"**Alt 1:** {row['Alt 1']}")
-            st.write(f"**Alt 2:** {row['Alt 2']}")
-            st.write(f"**Alt 3:** {row['Alt 3']}")
-            st.text_input("Weight Used", key=f"weight_{row['Block']}_{row['Primary Exercise']}")
-            st.text_area("Notes", key=f"notes_{row['Block']}_{row['Primary Exercise']}")
-            st.checkbox("✅ Done", key=f"done_{row['Block']}_{row['Primary Exercise']}")
+    for group in groups:
+        group_df = day_df[day_df["Group"] == group]
+        exercise_options = group_df["Primary Exercise"].tolist()
 
-# ─────────────────────────────────────────────
-# PAGE 2: WARM-UP & COOL DOWN
-# ─────────────────────────────────────────────
-elif page == "🧘 Warm-Up & Cool Down":
-    st.title("🧘 Warm-Up & Cool Down")
+        st.markdown(f"### {group}")
+        selected_exercise = st.selectbox(f"Choose exercise for {group}", exercise_options, key=f"exercise_{group}_{selected_day}")
+        exercise_row = group_df[group_df["Primary Exercise"] == selected_exercise].iloc[0]
 
-    selected_day = st.selectbox("Select Day", sorted(df_warmcool['Day'].unique()))
+        st.write(f"**Sets x Reps:** {exercise_row['Sets x Reps']}")
+        st.write(f"**RPE:** {exercise_row['RPE']}")
+        st.write(f"**Notes from Coach:** {exercise_row['Notes']}")
 
-    filtered = df_warmcool[df_warmcool["Day"] == selected_day]
-
-    warm = filtered[filtered['Block'].str.startswith("W")]
-    cool = filtered[filtered['Block'].str.startswith("C")]
-
-    st.subheader("🔥 Warm-Up")
-    for _, row in warm.iterrows():
-        st.markdown(f"**{row['Block']}** — {row['Primary Exercise']} ({row['Sets x Reps']})")
-        if row['Alt 1']: st.markdown(f"Alt: {row['Alt 1']}")
-        if row['Alt 2']: st.markdown(f"Alt: {row['Alt 2']}")
-
-    st.subheader("❄️ Cool Down")
-    for _, row in cool.iterrows():
-        st.markdown(f"**{row['Block']}** — {row['Primary Exercise']} ({row['Sets x Reps']})")
-        if row['Alt 1']: st.markdown(f"Alt: {row['Alt 1']}")
-        if row['Alt 2']: st.markdown(f"Alt: {row['Alt 2']}")
+        weight = st.text_input("💪 Weight Used", key=f"weight_{group}_{selected_day}")
+        reps = st.text_input("🔁 Reps", key=f"reps_{group}_{selected_day}")
+        user_notes = st.text_area("🗒️ Your Notes", key=f"usernotes_{group}_{selected_day}")
+        st.checkbox("✅ Mark Done", key=f"done_{group}_{selected_day}")
