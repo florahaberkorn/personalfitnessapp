@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # Load workout plan
-df = pd.read_excel("RISE_Vol_72_All_Workouts_Cleaned.xlsx")
+df = pd.read_excel("vol72.xlsx")
 
 # Sidebar filters
 day = st.sidebar.selectbox("Select Day", sorted(df['Day'].unique()))
